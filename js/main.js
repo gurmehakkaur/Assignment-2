@@ -8,21 +8,29 @@ document.addEventListener("DOMContentLoaded", () => {
         if (searchName) url += `&name=${searchName}`;
 
         fetch(url)
-            .then(res => res.ok ? res.json() : Promise.reject(res.status))
+            .then(res => {
+                if (!res.ok) {
+                    console.error(`Failed to fetch data, status: ${res.status}`);
+                    return Promise.reject(res.status);
+                }
+                return res.json();
+            })
             .then(data => {
+                console.log("Fetched data:", data); // Log the data to the console
                 const tbody = document.querySelector("#listingsTable tbody");
                 tbody.innerHTML = "";
-                
+
                 if (data.length) {
                     tbody.innerHTML = data.map(listing => `
                         <tr data-id="${listing._id}">
-                            <td>${listing.name}</td>
+                            <td><a href="${listing.listing_url}" target="_blank">${listing.name}</a></td>
                             <td>${listing.room_type || "Not specified"}</td>
-                            <td>${listing.address?.street || "Not available"}</td>
+                            <td>${listing.host_location || "Location not available"}</td>
                             <td>
                                 ${listing.summary || "No summary available."}<br><br>
                                 <strong>Accommodates:</strong> ${listing.accommodates || "Not specified"}<br>
-                                <strong>Rating:</strong> ${listing.review_scores?.review_scores_rating || "N/A"} (${listing.number_of_reviews || 0} Reviews)
+                                <strong>Rating:</strong> ${listing.number_of_reviews ? `${listing.number_of_reviews} Reviews` : "No reviews"}<br>
+                                <img src="${listing.images.picture_url}" alt="${listing.name}" width="150" />
                             </td>
                         </tr>
                     `).join("");
@@ -38,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             })
             .catch(error => {
-                console.error("Error fetching data:", error); // Log the error
+                console.error("Error fetching data:", error);
                 document.querySelector("#listingsTable tbody").innerHTML = "<tr><td colspan='4'><strong>No data available</strong></td></tr>";
             });
     };
